@@ -81,9 +81,9 @@ class CalendarEventsController: UITableViewController {
         
     }
     
-    override func viewDidAppear(animated: Bool) {
+    override func viewDidLoad() {
         
-        super.viewDidAppear(animated)
+        super.viewDidLoad()
         readEvent()
         
     }
@@ -105,23 +105,64 @@ class CalendarEventsController: UITableViewController {
         
     }
     
+    override func tableView(tableView: UITableView, commitEditingStyle editingStyle: UITableViewCellEditingStyle, forRowAtIndexPath indexPath: NSIndexPath) {
+        
+        if editingStyle == UITableViewCellEditingStyle.Delete {
+            
+            var error: NSError?
+            let event = eventsArray[indexPath.row]
+            eventStore.removeEvent(event, span: EKSpanThisEvent, commit: false, error: &error)
+            if error == nil {
+                
+                var error: NSError?
+                eventStore.commit(&error)
+                
+                if error == nil {
+                    
+                    println("Deleted")
+                    eventsArray.removeAtIndex(indexPath.row)
+                    tableView.deleteRowsAtIndexPaths([indexPath], withRowAnimation: UITableViewRowAnimation.Automatic)
+                    
+                }
+                
+            }
+        }
+        
+    }
+    
     @IBAction func addNewEvent(sender: AnyObject) {
         
-        let startDate = NSDate()
-        let endDate = startDate.dateByAddingTimeInterval(24 * 60 * 60)
-        let event = createEventWithTitle("Nick's Test", startDate: startDate, endDate: endDate, inCalendar: calendar, inEventStore: eventStore, notes: "Test")
-        
-        if let theEvent = event {
+        let controller = UIAlertController(title: "New Event", message: "Add new event", preferredStyle: UIAlertControllerStyle.Alert)
+        controller.addTextFieldWithConfigurationHandler { (textField) -> Void in
             
-            println("Successfully created the event.")
-            eventsArray.append(theEvent)
-            tableView.reloadSections(NSIndexSet(index: 0), withRowAnimation: UITableViewRowAnimation.Automatic)
-            
-        } else {
-            
-            println("Failed to create the event.")
+            textField.placeholder = "Enter event's title here!"
             
         }
+        controller.addAction(UIAlertAction(title: "OK", style: UIAlertActionStyle.Default, handler: { (action) -> Void in
+            
+            let startDate = NSDate(timeIntervalSinceNow: 20)
+            let endDate = startDate.dateByAddingTimeInterval(60)
+            let event = self.createEventWithTitle((controller.textFields?.first as UITextField).text, startDate: startDate, endDate: endDate, inCalendar: self.calendar, inEventStore: self.eventStore, notes: "Test")
+            let alarm = EKAlarm(relativeOffset: -2.0)
+            
+            if let theEvent = event {
+                
+                theEvent.addAlarm(alarm)
+                println("Successfully created the event.")
+                self.eventsArray.append(theEvent)
+                self.tableView.reloadSections(NSIndexSet(index: 0), withRowAnimation: UITableViewRowAnimation.Automatic)
+                
+            } else {
+                
+                println("Failed to create the event.")
+                
+            }
+            
+        }))
+        
+        controller.addAction(UIAlertAction(title: "Cancel", style: UIAlertActionStyle.Cancel, handler: nil))
+        
+        presentViewController(controller, animated: true, completion: nil)
         
     }
     

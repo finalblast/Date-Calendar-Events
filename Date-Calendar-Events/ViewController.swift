@@ -13,7 +13,7 @@ import EventKitUI
 class ViewController: UITableViewController {
     
     var calendarArray = [EKCalendar]()
-    let eventStore = EKEventStore()
+    var eventStore: EKEventStore!
     
     struct TableViewValue {
     
